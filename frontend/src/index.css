@@ -1,0 +1,25 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html, body, #root {
+  height: 100%
+}
+
+.dzu-dropzone {
+  border: 3px gray dashed!important;
+  border-radius: 10px!important;
+  overflow: hidden!important;
+  height: 25%!important;
+  width: 50%!important;
+  margin: auto!important;
+}
+
+.cdragndrop {
+  display: flex;
+}
