@@ -17,12 +17,12 @@ node golem_gpu_rendering.mjs --scene ../cubes.blend --format PNG --startFrame 1 
 
 ## Draft Client/Server
 
-Backend is a NodeJS process, ReactJS is used to code Frontend.
-
-Client connection is registered by backend on connection (GET /connect) and return a ClientId.
-This connection is used to notify client of events (SSE server side events).
-Parameters are sent with file and ClientId on upload action, then backend stores job on DB after reception.
-On other end, backend poll DB to process jobs sequentially and notify involved clients.
+Backend is a NodeJS process, ReactJS is used to code Frontend.  
+  
+Client connection is registered by backend on connection (GET /connect) and return a ClientId.  
+This connection is used to notify client of events (SSE server side events).  
+Parameters are sent with file and ClientId on upload action, then backend stores job on DB after reception.  
+On other end, backend poll DB to process jobs sequentially and notify involved clients.  
 
 
 - Backend
