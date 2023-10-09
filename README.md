@@ -9,11 +9,21 @@ Browser-based interface to render blender files using GPU providers on Golem Net
 cd backend
 python3 golem_gpu_rendering.py --scene ../cubes.blend --format PNG --start-frame 1 --stop-frame 6 --output-dir ./
 ```
+
+<p align="center">
+	<img src="screenshots/p1_terminal_app_python.png" width="80%"> 
+</p>
+
 - JS (code to use in final app)
 ```
 cd backend
 node golem_gpu_rendering.mjs --scene ../cubes.blend --format PNG --startFrame 1 --stopFrame 6 --outputDir ./
 ```
+
+<p align="center">
+	<img src="screenshots/p1_terminal_app_js.png" width="80%"> 
+</p>
+
 
 ## Draft Client/Server
 
@@ -40,3 +50,7 @@ cd frontend
 npm install  
 npm start  
 ```
+
+<p align="center">
+	<img src="screenshots/debug_frontend.png" width="80%"> 
+</p>
