@@ -149,8 +149,6 @@ program.parse();
 
 const options = program.opts();
 
-console.log(options);
-
 main(options.subnetTag,
 	 options.paymentDriver,
 	 options.paymentNetwork,
