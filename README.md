@@ -17,15 +17,13 @@ node golem_gpu_rendering.mjs --scene ../cubes.blend --format PNG --startFrame 1 
 
 ## Draft Client/Server
 
-Backend is a NodeJS process, ReactJS is used to code Frontend.  
-  
 Client connection is registered by backend on connection (GET /connect) and return a ClientId.  
 This connection is used to notify client of events (SSE server side events).  
 Parameters are sent with file and ClientId on upload action, then backend stores job on DB after reception.  
 On other end, backend polls DB to process jobs sequentially and notify involved clients.  
 
 
-- Backend
+- Backend (NodeJS)
 
 ```
 docker run --name mysql -e MYSQL_ROOT_PASSWORD=rootpassword -e MYSQL_USER=user -e MYSQL_PASSWORD=userpassword -e MYSQL_DATABASE=mydb -p 3306:3306 -d mysql  
@@ -35,7 +33,7 @@ npm install
 npm start  
 ```
 
-- Frontend
+- Frontend (ReactJS)
   
 ```
 cd frontend  
