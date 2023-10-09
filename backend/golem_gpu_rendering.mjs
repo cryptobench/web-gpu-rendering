@@ -59,8 +59,8 @@ async function main(subnetTag,
 					startFrame,
 					stopFrame,
 					stepFrame,
-					outputDir
-					//,verbose
+					outputDir,
+					verbose
 					) {
 
 	if(format in ["OPEN_EXR_MULTILAYER", "OPEN_EXR"])
@@ -68,11 +68,11 @@ async function main(subnetTag,
     else
         var ext = format.toLowerCase();
 
-	//var myEventTarget = new EventTarget();
-	//myEventTarget.addEventListener("GolemEvent", (e) => {
-	//	if(verbose == 'true')
-	//		console.log(e.timeStamp, e.name, e.detail);
-	//});
+	var myEventTarget = new EventTarget();
+	myEventTarget.addEventListener("GolemEvent", (e) => {
+		if(verbose == 'true')
+			console.log(e.timeStamp, e.name, e.detail);
+	});
 
 	const executor = await TaskExecutor.create({
 		subnetTag,
@@ -83,9 +83,8 @@ async function main(subnetTag,
 		minStorageGib: storage,
 		minCpuThreads: threads,	// minCpuCores
 		capabilities: ["cuda"],
-		logLevel: "debug",
-		//yagnaOptions: { apiKey: 'b328628d82144170a87099d0d179aaac' },
-		//eventTarget: myEventTarget
+		//logLevel: "debug",
+		eventTarget: myEventTarget
 	});
 
 	var cmd_display = "PCIID=$(nvidia-xconfig --query-gpu-info | grep 'PCI BusID' | awk -F'PCI BusID : ' '{print $2}') && (nvidia-xconfig --busid=$PCIID --use-display-device=none --virtual=1280x1024 || true) && ((Xorg :1 &) || true) && sleep 5"
@@ -100,7 +99,7 @@ async function main(subnetTag,
 	});
 
 	var frames = range(startFrame, stopFrame + 1, stepFrame);
-	console.log(frames);
+
 	const results = executor.map(frames, async (ctx, frame) => {
 
 		var filename = frame.toString().padStart(4, "0");
@@ -113,11 +112,13 @@ async function main(subnetTag,
 			.downloadFile(`/golem/output/${filename}.${ext}`, output_file)
 			.end()
 			.catch((e) => console.error(e));
+
 		return result?.length ? `${frame}` : "";
 	});
 
-	//for await (const result of results)
-	//	console.log(result);
+	for await (const result of results) {
+		//console.log(result);
+	}
 
 	await executor.end();
 }
@@ -148,7 +149,7 @@ program.parse();
 
 const options = program.opts();
 
-console.log(options);
+//console.log(options);
 
 main(options.subnetTag,
 	 options.paymentDriver,
@@ -170,5 +171,5 @@ main(options.subnetTag,
 	 options.stopFrame,
 	 options.stepFrame,
 	 options.outputDir,
-//	 options.verbose
+	 options.verbose
 );
