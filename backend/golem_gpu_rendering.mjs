@@ -149,27 +149,27 @@ program.parse();
 
 const options = program.opts();
 
-//console.log(options);
+console.log(options);
 
 main(options.subnetTag,
 	 options.paymentDriver,
 	 options.paymentNetwork,
-	 options.memory,
-	 options.storage,
-	 options.threads,
-	 options.workers,
-	 options.budget,
-	 options.startPrice,
-	 options.cpuPrice,
-	 options.envPrice,
-	 options.timeoutGlobal,
-	 options.timeoutUpload,
-	 options.timeoutRender,
+	 parseInt(options.memory, 10),
+	 parseInt(options.storage, 10),
+	 parseInt(options.threads, 10),
+	 parseInt(options.workers, 10),
+	 parseInt(options.budget, 10),
+	 parseInt(options.startPrice, 10),
+	 parseInt(options.cpuPrice, 10),
+	 parseInt(options.envPrice, 10),
+	 parseInt(options.timeoutGlobal, 10),
+	 parseInt(options.timeoutUpload, 10),
+	 parseInt(options.timeoutRender, 10),
 	 options.scene,
 	 options.format,
-	 options.startFrame,
-	 options.stopFrame,
-	 options.stepFrame,
+	 parseInt(options.startFrame, 10),
+	 parseInt(options.stopFrame, 10),
+	 parseInt(options.stepFrame, 10),
 	 options.outputDir,
 	 options.verbose
 );
