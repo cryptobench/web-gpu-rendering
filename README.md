@@ -11,7 +11,7 @@ python3 golem_gpu_rendering.py --scene ../cubes.blend --format PNG --start-frame
 ```
 
 <p align="center">
-	<img src="screenshots/p1_terminal_app_python.png" width="80%"> 
+	<img src="screenshots/p1_terminal_app_python.png" width="100%"> 
 </p>
 
 - JS (code to use in final app)
@@ -21,7 +21,7 @@ node golem_gpu_rendering.mjs --scene ../cubes.blend --format PNG --startFrame 1 
 ```
 
 <p align="center">
-	<img src="screenshots/p1_terminal_app_js.png" width="80%"> 
+	<img src="screenshots/p1_terminal_app_js.png" width="100%"> 
 </p>
 
 
@@ -52,5 +52,5 @@ npm start
 ```
 
 <p align="center">
-	<img src="screenshots/debug_frontend.png" width="80%"> 
+	<img src="screenshots/debug_frontend.png" width="100%"> 
 </p>
