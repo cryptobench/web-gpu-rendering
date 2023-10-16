@@ -28,12 +28,8 @@ node golem_gpu_rendering.mjs --scene ../cubes.blend --format PNG --startFrame 1 
 ## Stage 2 - WebUI
 
 - Requirements (Server side): Yagna, Docker, zip, Blender 3.5
-
-Client connection is registered by backend on connection (GET /connect) and return a ClientId.  
-This connection is used to notify client of events (SSE server side events).  
+  
 The input allows to select/drag'n'drop and upload up to 5 .blend files.  
-Parameters are sent with file and ClientId on upload action then backend stores tasks on DB after reception.  
-On the other end, backend polls DB to process jobs sequentially and notify involved clients.  
 A zip file is downloaded at the end of each file rendered with the frames, the video and the blender file inside.  
 
 - Backend (NodeJS)
