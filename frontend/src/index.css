@@ -23,3 +23,12 @@ html, body, #root {
 .cdragndrop {
   display: flex;
 }
+
+#navbrand {
+  display: flex;
+  align-items: center;
+}
+
+#navbrand>div {
+  margin: 10px;
+}
