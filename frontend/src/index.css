@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -11,24 +15,11 @@ html, body, #root {
   height: 100%
 }
 
-.dzu-dropzone {
+/* .dzu-dropzone {
   border: 3px gray dashed!important;
   border-radius: 10px!important;
   overflow: hidden!important;
   height: 25%!important;
   width: 50%!important;
   margin: auto!important;
-}
-
-.cdragndrop {
-  display: flex;
-}
-
-#navbrand {
-  display: flex;
-  align-items: center;
-}
-
-#navbrand>div {
-  margin: 10px;
-}
+} */

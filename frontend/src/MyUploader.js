@@ -60,17 +60,26 @@ export const MyUploader = (data) => {
     }
 
     return (
-        <Dropzone
-            getUploadParams={getUploadParams}
-            onChangeStatus={handleChangeStatus}
-            onSubmit={handleSubmit}
-            //accept={".blend"}
-            maxFiles={5}
-            autoUpload={false}
-            canRestart={false}
-            canCancel={false}
-            //canRemove={false}
-            SubmitButtonComponent={MySubmitButton}
-        />
+        <div id="cdragndrop" className="cdragndrop flex">
+            <Dropzone
+                classNames={{ 
+                    dropzone: "border-[3px] border-[#808080] border-dashed overflow-hidden h-[25%] w-[50%] m-auto rounded-[10px]",
+                    // inputLabel: "bg-black"
+                }}
+                styles={{
+                    // inputLabel: {color: 'black'}
+                }}
+                getUploadParams={getUploadParams}
+                onChangeStatus={handleChangeStatus}
+                onSubmit={handleSubmit}
+                //accept={".blend"}
+                maxFiles={5}
+                autoUpload={false}
+                canRestart={false}
+                canCancel={false}
+                //canRemove={false}
+                SubmitButtonComponent={MySubmitButton}
+            />
+        </div>
     )
 }
