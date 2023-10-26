@@ -1,7 +1,3 @@
-import Container from 'react-bootstrap/Container';
-import Nav from 'react-bootstrap/Nav';
-import Navbar from 'react-bootstrap/Navbar';
-import Button from 'react-bootstrap/Button';
 import useScreenSize from 'use-screen-size';
 import $ from 'jquery';
 import React, { useState, useEffect } from 'react'
@@ -17,18 +13,6 @@ function App() {
 
     const [ClientId, SetClientId] = useState(0);
     const [AllFiles, SetAllFiles] = useState([]);
-
-    const size = useScreenSize();
-
-    function resize_app() {
-        var app_height = $('#App').height();
-        var navbar_height = $('#Navbar').outerHeight();
-        $('#cdragndrop').height(app_height - navbar_height);
-    }
-
-    useEffect(() => {
-        resize_app();
-    }, [size]);
 
     sse.onmessage = e => {
         var data = JSON.parse(e.data.replace(/(?:\\[rn])+/g, ''));
@@ -55,7 +39,7 @@ function App() {
     }
 
     return (
-        <div id="App" className="App h-100">
+        <div id="App" className="App h-100 overflow-hidden">
             <Header />
             <MyUploader clientid={ClientId} setallfiles={SetAllFiles}/>
         </div>

@@ -60,14 +60,14 @@ export const MyUploader = (data) => {
     }
 
     return (
-        <div id="cdragndrop" className="cdragndrop flex">
+        <div id="cdragndrop" className="cdragndrop flex h-screen">
             <Dropzone
                 classNames={{ 
                     dropzone: "border-[3px] border-[#808080] border-dashed overflow-hidden h-[25%] w-[50%] m-auto rounded-[10px]",
                     // inputLabel: "bg-black"
                 }}
                 styles={{
-                    // inputLabel: {color: 'black'}
+                    inputLabel: {height: "100%", position: 'relative'/*, background: 'black'*/}
                 }}
                 getUploadParams={getUploadParams}
                 onChangeStatus={handleChangeStatus}
