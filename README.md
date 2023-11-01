@@ -38,7 +38,8 @@ A zip file is downloaded at the end of each file rendered with the frames, the v
 docker run --name mysql -e MYSQL_ROOT_PASSWORD=rootpassword -e MYSQL_USER=user -e MYSQL_PASSWORD=userpassword -e MYSQL_DATABASE=mydb -p 3306:3306 -d mysql  
 
 cd backend  
-npm install  
+npm install
+export HOST_BACKEND=localhost
 npm start  
 ```
 
