@@ -21,7 +21,7 @@ var clients = [];
 var mutex = false;
 
 var connection = mysql.createConnection({
-	host     : 'localhost',
+	host     : process.env['HOST_BACKEND'],
 	user     : 'user',
 	password : 'userpassword',
 	database : 'mydb'
