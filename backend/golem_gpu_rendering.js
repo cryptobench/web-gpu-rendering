@@ -35,8 +35,7 @@ program.parse();
 
 const options = program.opts();
 
-render(null,
-	 options.subnetTag,
+render(options.subnetTag,
 	 options.paymentDriver,
 	 options.paymentNetwork,
 	 parseInt(options.memory, 10),

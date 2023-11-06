@@ -30,22 +30,28 @@ function App() {
     }, [size]);
 
     sse.onmessage = e => {
-        var data = JSON.parse(e.data.replace(/(?:\\[rn])+/g, ''));
-        if(data.clientId !== undefined) {
-            SetClientId(data.clientId);
-        } else if(data.ready !== undefined) {
-            fetch(`http://localhost:3001/download?filename=${data.ready}`)
-                .then(resp => resp.blob())
-                .then(blob => {
-                    fileDownload(blob, `${data.ready}.zip`)
-                    var filewithmeta = AllFiles.filter(obj => {
-                        return obj.meta.id === data.idx
+        try {
+            var data = JSON.parse(e.data.replace(/(?:\\[rn])+/g, ''));
+            if(data.clientId !== undefined) {
+                SetClientId(data.clientId);
+            } else if(data.ready) {
+                var filename = `${data.clientid}_${data.jobuuid}.zip`;
+                fetch(`http://localhost:3001/download?filename=${data.clientid}/${data.jobuuid}/${filename}`)
+                    .then(resp => resp.blob())
+                    .then(blob => {
+                        fileDownload(blob, `${filename}`)
+                        var filewithmeta = AllFiles.filter(obj => {
+                            return obj.meta.id === data.jobindex;
+                        })
+                        filewithmeta[0].remove()
                     })
-                    filewithmeta[0].remove()
-                })
+            }
+            else {
+                console.log(data);
+            }
         }
-        else {
-            console.log(data);
+        catch {
+            console.log(e.data);
         }
     }
 

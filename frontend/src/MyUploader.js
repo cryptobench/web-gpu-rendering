@@ -4,7 +4,6 @@ import Dropzone from 'react-dropzone-uploader'
 
 const MySubmitButton = (props) => {
     const { className, buttonClassName, style, buttonStyle, disabled, content, onSubmit, files } = props
-    // preparing, ready, getting_upload_params, uploading, headers_received, done
     const _disabled = files.some(f => ['preparing', 'getting_upload_params', 'uploading', 'headers_received', 'done'].includes(f.meta.status)) || !files.some(f => ['ready'].includes(f.meta.status))
 
     const handleSubmit = () => {
@@ -23,7 +22,7 @@ const MySubmitButton = (props) => {
 export const MyUploader = (data) => {
 
     var params = {  "clientid": data.clientid,
-                    "subnettag": "norbert",
+                    "subnettag": "publlc",
                     "paymentdriver": "erc20",
                     "paymentnetwork": "goerli",
                     "memory": 8,
@@ -45,13 +44,10 @@ export const MyUploader = (data) => {
     const getUploadParams = ({ file, meta }) => {
         const body = new FormData()
         params.idx = `"${meta.id}"`;
+        params.walletaddress = '""';
         body.append('params', JSON.stringify(params))
         body.append('fileField', file)
         return {url: 'http://localhost:3001/upload', body}
-    }
-
-    const handleChangeStatus = ({ meta, file }, status) => {
-        //console.log(status, meta, file);
     }
 
     const handleSubmit = (files, allFiles) => {
@@ -62,14 +58,12 @@ export const MyUploader = (data) => {
     return (
         <Dropzone
             getUploadParams={getUploadParams}
-            onChangeStatus={handleChangeStatus}
             onSubmit={handleSubmit}
-            //accept={".blend"}
+            accept={".blend"}
             maxFiles={5}
             autoUpload={false}
             canRestart={false}
             canCancel={false}
-            //canRemove={false}
             SubmitButtonComponent={MySubmitButton}
         />
     )
