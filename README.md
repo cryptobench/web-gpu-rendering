@@ -28,5 +28,5 @@ npm start
 ```
 
 <p align="center">
-	<img src="screenshots/webui2.png" width="80%"> 
+	<img src="screenshots/webui2.png" width="100%"> 
 </p>
