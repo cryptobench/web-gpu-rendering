@@ -1,0 +1,4 @@
+!/backend//inputs/dont_remove
+/backend/inputs/*
+/backend/node_modules
+/frontend/node_modules
