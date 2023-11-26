@@ -12,6 +12,13 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 
 const sse = new EventSource('http://localhost:3001/connect');
 
+function get_file_by_index(allfiles, index) {
+    var filewithmeta = allfiles.filter(obj => {
+        return obj.meta.id === index;
+    })
+    return filewithmeta[0];
+}
+
 function App() {
 
     const [ClientId, SetClientId] = useState(0);
@@ -31,23 +38,24 @@ function App() {
 
     sse.onmessage = e => {
         try {
-            var data = JSON.parse(e.data.replace(/(?:\\[rn])+/g, ''));
-            if(data.clientId !== undefined) {
+            var data = JSON.parse(e.data);
+            console.log(data);
+            if(data.event === 'CONNECTED')
                 SetClientId(data.clientId);
-            } else if(data.ready) {
-                var filename = `${data.clientid}_${data.jobuuid}.zip`;
-                fetch(`http://localhost:3001/download?filename=${data.clientid}/${data.jobuuid}/${filename}`)
+            else if(data.event === 'JOB_FINISHED') {
+                var filename = `${data.clientId}_${data.jobUuid}.zip`
+                var req_field = btoa(`${data.clientId}/${data.jobUuid}/${filename}`);
+                fetch(`http://localhost:3001/download?filename=${req_field}`)
                     .then(resp => resp.blob())
                     .then(blob => {
                         fileDownload(blob, `${filename}`)
-                        var filewithmeta = AllFiles.filter(obj => {
-                            return obj.meta.id === data.jobindex;
-                        })
-                        filewithmeta[0].remove()
+                        get_file_by_index(AllFiles, data.jobIndex).remove();
                     })
             }
-            else {
-                console.log(data);
+            else if(['INTERNAL_ERROR_1', 'INTERNAL_ERROR_2', 'INVALID_BLEND_FILE', 'START_FRAME_ERROR', 'STOP_FRAME_ERROR', 'START_STOP_FRAME_ERROR'].includes(data.event))
+            {
+                var file = get_file_by_index(AllFiles, data.jobIndex);
+                file.cancel();
             }
         }
         catch {

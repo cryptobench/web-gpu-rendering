@@ -2,6 +2,14 @@ import { TaskExecutor, Events } from "@golem-sdk/golem-js";
 import { spawn } from 'node:child_process';
 import util from 'util';
 
+const SUBNET_TAG = 'publllc';		// process.env['SUBNET_TAG']
+const PAYMENT_DRIVER = 'erc20';		// process.env['PAYMENT_DRIVER']
+const PAYMENT_NETWORK = 'goerli';	// process.env['PAYMENT_NETWORK'];
+
+// Norbert's GPU providers (Beta)
+var whitelist_by_id = ["0x3d1990c8bf4d0462feb6d398789eb93bd170ee6a", "0x3b075306b76da09fdfba5439fc11bf78cb340000", "0xc0d404f279394c2a0ee270df7cf42fec5a15d9d2"];
+var blacklist_by_id = [];
+
 const myFilter = async (proposal) => {
 	var decision = false;
 
@@ -9,7 +17,11 @@ const myFilter = async (proposal) => {
 	var envprice = proposal.properties['golem.com.pricing.model.linear.coeffs'][1]*3600*1000;
 	var startprice = proposal.properties['golem.com.pricing.model.linear.coeffs'][2]*1000;
 
-	if((cpuprice <= cpu_price) && (envprice <= env_price) && (startprice <= start_price))
+	if(	(cpuprice <= cpu_price) &&
+		(envprice <= env_price) &&
+		(startprice <= start_price) &&
+		((whitelist_by_id.includes(proposal.provider.id) && whitelist_by_id.length != 0) || (whitelist_by_id.length == 0)) &&
+		!blacklist_by_id.includes(proposal.provider.id))
 		decision = true;
 
 	return decision;
@@ -56,9 +68,6 @@ var start_price = 0;
 var deployments_time = {};
 
 export async function render(   queue,
-								subnetTag,
-								paymentDriver,
-								paymentNetwork,
 								memory,
 								storage,
 								threads,
@@ -74,6 +83,8 @@ export async function render(   queue,
 								format,
 								frames,
 								outputDir,
+								whitelist,
+								blacklist,
 								verbose
 								) {
 
@@ -82,6 +93,12 @@ export async function render(   queue,
 	cpu_price = cpuPrice;
 	env_price = envPrice;
 	start_price = startPrice;
+
+	if(blacklist.length != 0)
+		blacklist_by_id = blacklist;
+
+	if(whitelist.length != 0)
+		whitelist_by_id = whitelist;
 
 	if(format in ["OPEN_EXR_MULTILAYER", "OPEN_EXR"])
         var ext = "exr";
@@ -107,14 +124,15 @@ export async function render(   queue,
 	});
 
 	const executor = await TaskExecutor.create({
-		subnetTag,
-		payment: {paymentDriver, paymentNetwork},
+		subnetTag: SUBNET_TAG,
+		payment: {driver: PAYMENT_DRIVER, network: PAYMENT_NETWORK},
 		package: "b5e19a68e0268c0e72309048b5e6a29512e3ecbabd355c6ac590f75d",
 		proposalFilter: myFilter,
 		minMemGib : memory,
 		minStorageGib: storage,
 		minCpuThreads: threads,	// minCpuCores
-		capabilities: ["cuda"],
+		capabilities: ["!exp:gpu"],
+		engine: "vm-nvidia",
 		logLevel: "debug",
 		eventTarget: myEventTarget
 	});
@@ -130,6 +148,7 @@ export async function render(   queue,
 			.run(cmd_display)
 			.end()
 			.catch((e) => {
+				blacklist_by_id.push(ctx.options.provider.id);
 				queue_send(queue, {agreementId: ctx.activity.agreementId, event: 'UPLOAD_ERROR', error_message: e});
 			});
 
@@ -148,6 +167,7 @@ export async function render(   queue,
 			.downloadFile(`/golem/output/${filename}.${ext}`, output_file)
 			.end()
 			.catch((e) => {
+				blacklist_by_id.push(ctx.options.provider.id);
 				queue_send(queue, {agreementId: ctx.activity.agreementId, event: 'RENDER_FRAME_ERROR', error_message: e});
 			});
 

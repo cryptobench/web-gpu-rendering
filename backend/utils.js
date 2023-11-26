@@ -2,6 +2,11 @@ function get_mysql_date() {
 	return new Date().toISOString().slice(0, 19).replace('T', ' ');
 }
 
+function send_event_to_client(client, event) {
+	if(client)
+		client.response.write(`data: ${JSON.stringify(event)}\n\n`);
+}
+
 function get_client(clients, clientid) {
 	var client = clients.filter(obj => {
 		return obj.id === clientid;
@@ -22,4 +27,4 @@ function range(start, stop, step) {
 	return res;
 }
 
-module.exports = {get_mysql_date, get_client, range}
+module.exports = {get_mysql_date, send_event_to_client, get_client, range}

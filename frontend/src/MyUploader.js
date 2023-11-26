@@ -1,4 +1,5 @@
 import 'react-dropzone-uploader/dist/styles.css'
+import { useEffect } from 'react'
 
 import Dropzone from 'react-dropzone-uploader'
 
@@ -22,9 +23,7 @@ const MySubmitButton = (props) => {
 export const MyUploader = (data) => {
 
     var params = {  "clientid": data.clientid,
-                    "subnettag": "publlc",
-                    "paymentdriver": "erc20",
-                    "paymentnetwork": "goerli",
+                    "walletaddress": "",
                     "memory": 8,
                     "storage": 1,
                     "threads": 4,
@@ -39,13 +38,14 @@ export const MyUploader = (data) => {
                     "format": "PNG",
                     "startframe": 1,
                     "stopframe": 3,
-                    "stepframe": 1}
+                    "stepframe": 1,
+                    "whitelist": ["0x3d1990c8bf4d0462feb6d398789eb93bd170ee6a", "0x3b075306b76da09fdfba5439fc11bf78cb340000", "0xc0d404f279394c2a0ee270df7cf42fec5a15d9d2"],
+                    "blacklist": []}
 
     const getUploadParams = ({ file, meta }) => {
         const body = new FormData()
-        params.idx = `"${meta.id}"`;
-        params.walletaddress = '""';
-        body.append('params', JSON.stringify(params))
+        params.idx = meta.id;
+        body.append('params', btoa(JSON.stringify(params)))
         body.append('fileField', file)
         return {url: 'http://localhost:3001/upload', body}
     }
@@ -53,6 +53,14 @@ export const MyUploader = (data) => {
     const handleSubmit = (files, allFiles) => {
         data.setallfiles(allFiles);
         allFiles.forEach(f => f.restart())
+    }
+
+    const handleChangeStatus = ({ meta, file }, status) => {
+        if(status === 'aborted')
+        {
+            meta.percent = 0;
+            meta.status = 'ready';
+        }
     }
 
     return (
@@ -64,6 +72,7 @@ export const MyUploader = (data) => {
             autoUpload={false}
             canRestart={false}
             canCancel={false}
+            onChangeStatus={handleChangeStatus}
             SubmitButtonComponent={MySubmitButton}
         />
     )

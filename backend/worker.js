@@ -1,10 +1,10 @@
 require("./global.js");
 
-async function render(	subnetTag, paymentDriver, paymentNetwork, memory, storage, threads, workers,	budget,	startPrice,	cpuPrice, envPrice, timeoutGlobal,
-						timeoutUpload, timeoutRender, scene, format, frames, outputDir, verbose) {
+async function render(	memory, storage, threads, workers,	budget,	startPrice,	cpuPrice, envPrice, timeoutGlobal, timeoutUpload, timeoutRender, scene, format,
+						frames, outputDir, whitelist, blacklist, verbose) {
 	const ggr = await import("./render.mjs");
-	return ggr.render(	queue, subnetTag, paymentDriver, paymentNetwork, memory, storage, threads, workers, budget, startPrice, cpuPrice, envPrice,	timeoutGlobal,
-						timeoutUpload, timeoutRender, scene, format, frames, outputDir, verbose);
+	return ggr.render(	queue, memory, storage, threads, workers, budget, startPrice, cpuPrice, envPrice, timeoutGlobal, timeoutUpload, timeoutRender, scene, format,
+						frames, outputDir, whitelist, blacklist, verbose);
 }
 
 function assemble_frames_and_notify(client, scene_filepath, archive_name, output_dir, clientid, jobuuid, jobindex) {
@@ -14,7 +14,7 @@ function assemble_frames_and_notify(client, scene_filepath, archive_name, output
 		  cwd: output_dir
 		});
 		if(client)
-			client.response.write(`data: {"ready": true, "clientid": ${clientid}, "jobuuid": ${jobuuid}, "jobindex": "${jobindex}"}\n\n`);
+			utils.send_event_to_client(client, {"event": "JOB_FINISHED", "clientId": clientid, "jobUuid": jobuuid, "jobIndex": jobindex});
 	});
 }
 
@@ -45,24 +45,28 @@ function checkJobs() {
 
 			if(frames.length == 0)
 				return do_post_job_actions(	jobid, client, `${cj.parameters.outputdir}/${cj.parameters.scene}`, `${cj.job.clientid}_${cj.job.jobuuid}`,
-											`${cj.parameters.outputdir}`, `${cj.job.clientid}`, cj.job.jobuuid, `${cj.job.jobindex}`);
+											cj.parameters.outputdir, cj.job.clientid, cj.job.jobuuid, cj.job.jobindex);
 			else
 				return db.update_table_entry_by_id('jobs', 'jobid', cj.job.jobid, sql_job_update)
 				.then(function (result) {
-					return render( cj.parameters.subnettag, cj.parameters.paymentdriver, cj.parameters.paymentnetwork, cj.parameters.memory, cj.parameters.storage, cj.parameters.threads,
-						cj.parameters.workers, cj.parameters.budget, cj.parameters.startprice, cj.parameters.cpuprice, cj.parameters.envprice, cj.parameters.timeoutglobal,	cj.parameters.timeoutupload,
-						cj.parameters.timeoutrender, `${cj.parameters.outputdir}/${cj.parameters.scene}`, cj.parameters.format, frames, cj.parameters.outputdir, "true")
+					return render( 	cj.parameters.memory, cj.parameters.storage, cj.parameters.threads, cj.parameters.workers, cj.parameters.budget, cj.parameters.startprice,
+									cj.parameters.cpuprice, cj.parameters.envprice,	cj.parameters.timeoutglobal, cj.parameters.timeoutupload, cj.parameters.timeoutrender,
+									`${cj.parameters.outputdir}/${cj.parameters.scene}`, cj.parameters.format, frames, cj.parameters.outputdir, JSON.parse(cj.parameters.whitelist),
+									JSON.parse(cj.parameters.blacklist), "true")
 					.then((data) => {
 						return db.get_job_tasks_done(cj.job.jobid)
 						.then(function (result) {
 							if(result.length == job_frames_len)
 								return do_post_job_actions(	jobid, client, `${cj.parameters.outputdir}/${cj.parameters.scene}`, `${cj.job.clientid}_${cj.job.jobuuid}`,
-															`${cj.parameters.outputdir}`, `${cj.job.clientid}`, cj.job.jobuuid, `${cj.job.jobindex}`);
+															cj.parameters.outputdir, cj.job.clientid, cj.job.jobuuid, cj.job.jobindex);
 							else
 								return db.update_table_entry_by_id('jobs', 'jobid', cj.job.jobid, {status: 'RETRY', retrycount: cj.job.retrycount + 1});
 						})
 					})
-					.catch((err) => {});
+					.catch((err) => {
+						utils.send_event_to_client(client, {event: 'INTERNAL_ERROR_3', errorMessage: err, jobIndex: cj.job.jobindex});
+						db.insert_error(utils.get_mysql_date(), err, '', cj.job.jobid, '');
+					});
 				})
 		}
 		else

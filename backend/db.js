@@ -53,22 +53,22 @@ function get_job() {
 	})
 }
 
-function add_job(subnettag, paymentdriver, paymentnetwork, memory, storage, threads, workers, budget, startprice, cpuprice, envprice, timeoutglobal,
-				 timeoutupload, timeoutrender, scene, format, startframe, stopframe, stepframe, outputdir, clientid, jobuuid, jobindex, walletaddress) {
-  	return insert_parameters(	subnettag, paymentdriver, paymentnetwork, memory, storage, threads, workers, budget, startprice, cpuprice, envprice,
-								timeoutglobal, timeoutupload, timeoutrender, scene, format, startframe, stopframe, stepframe, outputdir)
+function add_job(	memory, storage, threads, workers, budget, startprice, cpuprice, envprice, timeoutglobal, timeoutupload, timeoutrender, scene, format,
+					startframe, stopframe, stepframe, outputdir, clientid, jobuuid, jobindex, walletaddress, whitelist, blacklist) {
+  	return insert_parameters(	memory, storage, threads, workers, budget, startprice, cpuprice, envprice, timeoutglobal, timeoutupload, timeoutrender,
+  								scene, format, startframe, stopframe, stepframe, outputdir, whitelist, blacklist)
 	.then(function (result) {
 		return insert_job(clientid, jobuuid, jobindex, walletaddress, result.insertId);
 	})
 }
 
-function insert_parameters(	subnettag, paymentdriver, paymentnetwork, memory, storage, threads, workers, budget, startprice, cpuprice, envprice,
-							timeoutglobal, timeoutupload, timeoutrender, scene, format, startframe, stopframe, stepframe, outputdir) {
-	var sql = `INSERT INTO parameters (	subnettag, paymentdriver, paymentnetwork, memory, storage, threads,	workers, budget, startprice, cpuprice, envprice, 	\
-										timeoutglobal, timeoutupload, timeoutrender, scene, format, startframe,	stopframe, stepframe, outputdir)				\
-										VALUES ('${subnettag}', '${paymentdriver}',	'${paymentnetwork}', ${memory}, ${storage},	${threads}, ${workers},			\
-										${budget}, ${startprice}, ${cpuprice}, ${envprice},	${timeoutglobal}, ${timeoutupload}, ${timeoutrender}, '${scene}',	\
-										'${format}', ${startframe}, ${stopframe}, ${stepframe}, '${outputdir}')`;
+function insert_parameters(	memory, storage, threads, workers, budget, startprice, cpuprice, envprice, timeoutglobal, timeoutupload, timeoutrender, scene,
+							format, startframe, stopframe, stepframe, outputdir, whitelist, blacklist) {
+	var sql = `INSERT INTO parameters (	memory, storage, threads, workers, budget, startprice, cpuprice, envprice, timeoutglobal, timeoutupload, timeoutrender, \
+										scene, format, startframe,	stopframe, stepframe, outputdir, whitelist,	blacklist)										\																												\
+										VALUES (${memory}, ${storage},	${threads}, ${workers},	${budget}, ${startprice}, ${cpuprice}, ${envprice},				\
+												${timeoutglobal}, ${timeoutupload}, ${timeoutrender}, '${scene}', '${format}', ${startframe}, ${stopframe}, 	\
+												${stepframe}, '${outputdir}', '${whitelist}', '${blacklist}')`;
 	return execSql(sql)
 	.then(function (result) {
 		return result;
@@ -78,7 +78,7 @@ function insert_parameters(	subnettag, paymentdriver, paymentnetwork, memory, st
 function insert_job(clientid, jobuuid, jobindex, walletaddress, parametersid) {
 	var timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
 	var sql = `INSERT INTO jobs (	clientid, jobuuid, jobindex, walletaddress, parametersid, createdat, status, retrycount)									\
-									VALUES (${clientid}, ${jobuuid}, ${jobindex}, ${walletaddress}, ${parametersid}, '${timestamp}', 'TODO', 0)`;
+									VALUES (${clientid}, ${jobuuid}, '${jobindex}', '${walletaddress}', ${parametersid}, '${timestamp}', 'TODO', 0)`;
 	return execSql(sql)
 	.then(function (result) {
 		return result;
@@ -95,8 +95,16 @@ function insert_agreement(agreementid, jobid, providerid, providername) {
 }
 
 function insert_task(jobid, frame, agreementid, createdat, rendertime, status) {
-	var sql = `INSERT INTO tasks (  jobid, frame, agreementid, createdat, rendertime, status) VALUES (${jobid}, ${frame}, '${agreementid}', '${createdat}',				\
+	var sql = `INSERT INTO tasks (  jobid, frame, agreementid, createdat, rendertime, status) VALUES (${jobid}, ${frame}, '${agreementid}', '${createdat}',		\
 									${rendertime}, '${status}')`;
+	return execSql(sql)
+	.then(function (result) {
+		return result;
+	})
+}
+
+function insert_error(time, error, agreementid, jobid, providerid) {
+	var sql = `INSERT INTO errors (	time, error, agreementid, jobid, providerid) VALUES (${time}, '${error}', '${agreementid}', ${jobid}, '${providerid}')`;
 	return execSql(sql)
 	.then(function (result) {
 		return result;
@@ -117,7 +125,6 @@ function execSql(sql) {
 }
 
 // TODO, 	add foreign and secondary keys
-//			check error for all
 
 function createTables() {
 	var createJobsTable = 	`create table if not exists jobs(
@@ -135,9 +142,6 @@ function createTables() {
 
 	var createParametersTable = 	`create table if not exists parameters(
 										parametersid BIGINT AUTO_INCREMENT primary key,
-										subnettag TINYTEXT,
-										paymentdriver TINYTEXT,
-										paymentnetwork TINYTEXT,
 										memory SMALLINT,
 										storage SMALLINT,
 										threads SMALLINT,
@@ -154,7 +158,9 @@ function createTables() {
 										startframe INT,
 										stopframe INT,
 										stepframe INT,
-										outputdir TINYTEXT)`;
+										outputdir TINYTEXT,
+										whitelist TEXT,
+										blacklist TEXT)`;
 
 	var createTasksTable = 	`create table if not exists tasks(
 								taskid BIGINT AUTO_INCREMENT primary key,
@@ -176,6 +182,14 @@ function createTables() {
 		                        	uploadtime INT,
 		                        	cost FLOAT)`;
 
+	var createErrorsTable = `create table if not exists errors(
+									errorid BIGINT AUTO_INCREMENT primary key,
+		                        	time TIMESTAMP,
+		                        	error TEXT,
+		                        	agreementid VARCHAR(66),
+		                        	jobid BIGINT,
+		                        	providerid TINYTEXT)`;
+
 	execSql(createJobsTable)
 	.then(function (result) {
 		return execSql(createParametersTable);
@@ -187,6 +201,9 @@ function createTables() {
 		return execSql(createAgreementsTable);
 	})
 	.then(function (result) {
+		return execSql(createErrorsTable);
+	})
+	.then(function (result) {
 		console.log('db tables ready');
 	})
 	.catch((err) => {
@@ -194,4 +211,4 @@ function createTables() {
   	})
 }
 
-module.exports = {execSql, createTables, get_job_tasks_done, update_table_entry_by_id, get_job, add_job, insert_parameters, insert_job, insert_agreement, insert_task}
+module.exports = {execSql, createTables, get_job_tasks_done, update_table_entry_by_id, get_job, add_job, insert_parameters, insert_job, insert_agreement, insert_task, insert_error}

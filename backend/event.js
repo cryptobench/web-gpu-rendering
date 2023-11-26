@@ -1,11 +1,11 @@
 require("./global.js");
 
-function checkQueue(send_event_to_client) {
+function checkQueue() {
 	var msg;
 	try {
 		while(msg = queue.receive()) {
 			if(!(['YAGNA_OK', 'YAGNA_ERROR', 'RENDER_FRAME_FINISHED', 'INVOICE_RECEIVED', 'RENDER_FRAME_ERROR'].includes(msg.event)))
-				send_event_to_client(client, msg);
+				utils.send_event_to_client(client, msg);
 
 			if(msg.event === 'YAGNA_OK')
 				yagna_already_in_error = false;
@@ -22,11 +22,11 @@ function checkQueue(send_event_to_client) {
 				var frame_size = fs.statSync(msg.outputFile).size;
 				if(frame_size != 0)
 				{
-					var createdat = new Date(msg.startRenderTime).toISOString().slice(0, 19).replace('T', ' ');
+					var createdat = utils.get_mysql_date();
 					db.insert_task(jobid, msg.frame, msg.agreementId, createdat, msg.renderFrameTime, 'DONE');
 					delete msg.outputFile;
 					delete msg.startRenderTime;
-					send_event_to_client(client, msg);
+					utils.send_event_to_client(client, msg);
 				}
 			}
 			else if(msg.event === 'RENDER_FRAME_ERROR')
@@ -44,7 +44,7 @@ function checkQueue(send_event_to_client) {
 			{
 				db.update_table_entry_by_id('agreements', 'agreementid', msg.agreementId, {cost: msg.amount});
 				delete msg.time;
-				send_event_to_client(client, msg);
+				utils.send_event_to_client(client, msg);
 			}
 			else if(msg.event == 'UPLOAD_FINISHED')
 				db.update_table_entry_by_id('agreements', 'agreementid', msg.agreementId, {uploadtime: msg.upload_time});
