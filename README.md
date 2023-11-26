@@ -8,6 +8,10 @@ Browser-based interface to render blender files using GPU providers on Golem Net
 The input allows to select/drag'n'drop and upload up to 5 .blend files.  
 A zip file is downloaded at the end of each file rendered with the frames, the video and the blender file inside.  
 
+```
+git clone -b error_handling_norbert https://github.com/konradbjk/web-gpu-rendering.git  
+```
+
 - Backend (NodeJS)
 
 ```
