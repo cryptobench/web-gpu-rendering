@@ -14,7 +14,7 @@ const worker = require("./worker.js");
 
 const app = express();
 
-app.use(cors());
+app.use(cors({origin: '*'}));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(fileUpload());

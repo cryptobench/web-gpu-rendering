@@ -32,7 +32,7 @@ function checkJobs() {
 		if(cj)
 		{
 			jobid = cj.job.jobid;
-			var client = utils.get_client(clients, cj.job.clientid);
+			client = utils.get_client(clients, cj.job.clientid);
 
 			var frames = utils.range(cj.parameters.startframe, cj.parameters.stopframe + 1, cj.parameters.stepframe);
 			var job_frames_len = frames.length;
@@ -64,8 +64,11 @@ function checkJobs() {
 						})
 					})
 					.catch((err) => {
-						utils.send_event_to_client(client, {event: 'INTERNAL_ERROR_3', errorMessage: err, jobIndex: cj.job.jobindex});
-						db.insert_error(utils.get_mysql_date(), err, '', cj.job.jobid, '');
+						if(!err.includes('No connection to Yagna'))
+						{
+							utils.send_event_to_client(client, {"event": "INTERNAL_ERROR_3", "errorMessage": err, "jobIndex": cj.job.jobindex});
+							db.insert_error(utils.get_mysql_date(), err, '', cj.job.jobid, '');
+						}
 					});
 				})
 		}

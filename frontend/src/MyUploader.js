@@ -1,5 +1,4 @@
 import 'react-dropzone-uploader/dist/styles.css'
-import { useEffect } from 'react'
 
 import Dropzone from 'react-dropzone-uploader'
 
@@ -23,7 +22,7 @@ const MySubmitButton = (props) => {
 export const MyUploader = (data) => {
 
     var params = {  "clientid": data.clientid,
-                    "walletaddress": "",
+                    "walletaddress": "0x1111111111111111111111111111111111111111",
                     "memory": 8,
                     "storage": 1,
                     "threads": 4,
@@ -45,7 +44,7 @@ export const MyUploader = (data) => {
     const getUploadParams = ({ file, meta }) => {
         const body = new FormData()
         params.idx = meta.id;
-        body.append('params', btoa(JSON.stringify(params)))
+        body.append('params', btoa(JSON.stringify(params)));
         body.append('fileField', file)
         return {url: 'http://localhost:3001/upload', body}
     }

@@ -42,9 +42,9 @@ function check_yagna_status(queue) {
 			var account_reserved = jsondata.reserved;
 	        if((account_amount - account_reserved) < 1) {
 	            if(account_reserved > 0)
-	                queue_send(queue, {event: 'YAGNA_ERROR', error_message: 'Yagna daemon has not enought glm available'});
+	                queue_send(queue, {event: 'YAGNA_ERROR', errorMessage: 'Yagna daemon has not enought glm available'});
 	            else
-	                queue_send(queue, {event: 'YAGNA_ERROR', error_message: 'Yagna daemon has below 1 GLM'});
+	                queue_send(queue, {event: 'YAGNA_ERROR', errorMessage: 'Yagna daemon has below 1 GLM'});
 			}
 			else
 				queue_send(queue, {event: 'YAGNA_OK'});
@@ -53,11 +53,11 @@ function check_yagna_status(queue) {
 		cmd.stderr.on('data', (data) => {
 			var sdata = data.toString();
 			if(sdata.includes("routing error: Connecting GSB"))
-				queue_send(queue, {event: 'YAGNA_ERROR', error_message: 'Yagna is not_running'});
+				queue_send(queue, {event: 'YAGNA_ERROR', errorMessage: 'Yagna is not_running'});
 		});
 
 		cmd.on('error', (code) => {
-			queue_send(queue, {event: 'YAGNA_ERROR', error_message: 'Yagna is not installed or not in PATH'});
+			queue_send(queue, {event: 'YAGNA_ERROR', errorMessage: 'Yagna is not installed or not in PATH'});
 		});
 }
 
