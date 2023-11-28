@@ -11,9 +11,6 @@ var whitelist_by_id = ["0xe17117edc3a6e60fb2b921c1c9ca9516fb133248", "0x3b075306
 var blacklist_by_id = [];
 
 const myFilter = async (proposal) => {
-
-	console.log(proposal);
-
 	var decision = false;
 
 	var cpuprice = proposal.properties['golem.com.pricing.model.linear.coeffs'][0]*3600*1000;
