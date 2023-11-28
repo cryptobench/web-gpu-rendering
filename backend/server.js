@@ -12,6 +12,8 @@ const niv = require('node-input-validator');
 const event = require("./event.js");
 const worker = require("./worker.js");
 
+require('dotenv').config();
+
 const app = express();
 
 app.use(cors({origin: '*'}));

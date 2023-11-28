@@ -124,6 +124,7 @@ export async function render(   queue,
 	});
 
 	const executor = await TaskExecutor.create({
+		yagnaOptions: {apiKey: process.env.YAGNA_APP_KEY},
 		subnetTag: SUBNET_TAG,
 		payment: {driver: PAYMENT_DRIVER, network: PAYMENT_NETWORK},
 		package: "b5e19a68e0268c0e72309048b5e6a29512e3ecbabd355c6ac590f75d",
