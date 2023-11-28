@@ -7,10 +7,13 @@ const PAYMENT_DRIVER = 'erc20';		// process.env['PAYMENT_DRIVER']
 const PAYMENT_NETWORK = 'goerli';	// process.env['PAYMENT_NETWORK'];
 
 // Norbert's GPU providers (Beta)
-var whitelist_by_id = ["0x3d1990c8bf4d0462feb6d398789eb93bd170ee6a", "0x3b075306b76da09fdfba5439fc11bf78cb340000", "0xc0d404f279394c2a0ee270df7cf42fec5a15d9d2"];
+var whitelist_by_id = ["0xe17117edc3a6e60fb2b921c1c9ca9516fb133248", "0x3b075306b76da09fdfba5439fc11bf78cb340000", "0xc0d404f279394c2a0ee270df7cf42fec5a15d9d2"];
 var blacklist_by_id = [];
 
 const myFilter = async (proposal) => {
+
+	console.log(proposal);
+
 	var decision = false;
 
 	var cpuprice = proposal.properties['golem.com.pricing.model.linear.coeffs'][0]*3600*1000;
