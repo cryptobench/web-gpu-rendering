@@ -105,7 +105,11 @@ connection.connect(function(err)
 				});
 
 				try {
-					var params = JSON.parse(atob(req.body.params));
+					var ns_params = JSON.parse(atob(req.body.params));
+					var params = sanitizer.sanitize.prepareSanitize(
+					  ns_params,
+					  {sql: true, level: 5}
+					);
 
 					const params_validator = new niv.Validator(params, {
 						clientid: 'required|integer',
