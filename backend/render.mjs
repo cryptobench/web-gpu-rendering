@@ -7,7 +7,7 @@ const PAYMENT_DRIVER = 'erc20';		// process.env['PAYMENT_DRIVER']
 const PAYMENT_NETWORK = 'goerli';	// process.env['PAYMENT_NETWORK'];
 
 // Norbert's GPU providers (Beta)
-var whitelist_by_id = ["0x3d1990c8bf4d0462feb6d398789eb93bd170ee6a", "0x3b075306b76da09fdfba5439fc11bf78cb340000", "0xc0d404f279394c2a0ee270df7cf42fec5a15d9d2"];
+var whitelist_by_id = ["0xe17117edc3a6e60fb2b921c1c9ca9516fb133248", "0x3b075306b76da09fdfba5439fc11bf78cb340000", "0xc0d404f279394c2a0ee270df7cf42fec5a15d9d2"];
 var blacklist_by_id = [];
 
 const myFilter = async (proposal) => {
@@ -42,9 +42,9 @@ function check_yagna_status(queue) {
 			var account_reserved = jsondata.reserved;
 	        if((account_amount - account_reserved) < 1) {
 	            if(account_reserved > 0)
-	                queue_send(queue, {event: 'YAGNA_ERROR', error_message: 'Yagna daemon has not enought glm available'});
+	                queue_send(queue, {event: 'YAGNA_ERROR', errorMessage: 'Yagna daemon has not enought glm available'});
 	            else
-	                queue_send(queue, {event: 'YAGNA_ERROR', error_message: 'Yagna daemon has below 1 GLM'});
+	                queue_send(queue, {event: 'YAGNA_ERROR', errorMessage: 'Yagna daemon has below 1 GLM'});
 			}
 			else
 				queue_send(queue, {event: 'YAGNA_OK'});
@@ -53,11 +53,11 @@ function check_yagna_status(queue) {
 		cmd.stderr.on('data', (data) => {
 			var sdata = data.toString();
 			if(sdata.includes("routing error: Connecting GSB"))
-				queue_send(queue, {event: 'YAGNA_ERROR', error_message: 'Yagna is not_running'});
+				queue_send(queue, {event: 'YAGNA_ERROR', errorMessage: 'Yagna is not_running'});
 		});
 
 		cmd.on('error', (code) => {
-			queue_send(queue, {event: 'YAGNA_ERROR', error_message: 'Yagna is not installed or not in PATH'});
+			queue_send(queue, {event: 'YAGNA_ERROR', errorMessage: 'Yagna is not installed or not in PATH'});
 		});
 }
 
@@ -124,6 +124,7 @@ export async function render(   queue,
 	});
 
 	const executor = await TaskExecutor.create({
+		yagnaOptions: {apiKey: process.env.YAGNA_APP_KEY},
 		subnetTag: SUBNET_TAG,
 		payment: {driver: PAYMENT_DRIVER, network: PAYMENT_NETWORK},
 		package: "b5e19a68e0268c0e72309048b5e6a29512e3ecbabd355c6ac590f75d",

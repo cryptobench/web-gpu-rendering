@@ -104,7 +104,7 @@ function insert_task(jobid, frame, agreementid, createdat, rendertime, status) {
 }
 
 function insert_error(time, error, agreementid, jobid, providerid) {
-	var sql = `INSERT INTO errors (	time, error, agreementid, jobid, providerid) VALUES (${time}, '${error}', '${agreementid}', ${jobid}, '${providerid}')`;
+	var sql = `INSERT INTO errors (	time, error, agreementid, jobid, providerid) VALUES ('${time}', '${error}', '${agreementid}', ${jobid}, '${providerid}')`;
 	return execSql(sql)
 	.then(function (result) {
 		return result;

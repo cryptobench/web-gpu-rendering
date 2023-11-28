@@ -12,9 +12,11 @@ const niv = require('node-input-validator');
 const event = require("./event.js");
 const worker = require("./worker.js");
 
+require('dotenv').config();
+
 const app = express();
 
-app.use(cors());
+app.use(cors({origin: '*'}));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(fileUpload());
@@ -105,7 +107,11 @@ connection.connect(function(err)
 				});
 
 				try {
-					var params = JSON.parse(atob(req.body.params));
+					var ns_params = JSON.parse(atob(req.body.params));
+					var params = sanitizer.sanitize.prepareSanitize(
+					  ns_params,
+					  {sql: true, level: 5}
+					);
 
 					const params_validator = new niv.Validator(params, {
 						clientid: 'required|integer',

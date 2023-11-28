@@ -14,6 +14,8 @@ function checkQueue() {
 				if(!yagna_already_in_error)
 				{
 					yagna_already_in_error = true;
+					db.insert_error(utils.get_mysql_date(), msg.errorMessage, '', jobid, '');
+					utils.send_event_to_client(client, msg);
 					console.log(msg);
 				}
 			}
