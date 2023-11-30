@@ -24,6 +24,12 @@ html, body, #root {
   display: flex;
 }
 
+.metamask {
+  display: flex;
+  align-items: center;
+  margin: auto!important;
+}
+
 #navbrand {
   display: flex;
   align-items: center;

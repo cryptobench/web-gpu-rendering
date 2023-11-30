@@ -22,7 +22,7 @@ const MySubmitButton = (props) => {
 export const MyUploader = (data) => {
 
     var params = {  "clientid": data.clientid,
-                    "walletaddress": "0x1111111111111111111111111111111111111111",
+                    "walletaddress": data.walletaddress,
                     "memory": 8,
                     "storage": 1,
                     "threads": 4,

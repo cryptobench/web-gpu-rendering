@@ -7,8 +7,15 @@ import $ from 'jquery';
 import React, { useState, useEffect } from 'react'
 import { MyUploader } from "./MyUploader";
 import fileDownload from 'js-file-download'
+import { useMetaMask } from "metamask-react";
+import { ethers } from 'ethers';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
+
+var already_connected_to_backend = false;
+var signer = null;
+var provider = null;
+var authenticated = false;
 
 const sse = new EventSource('http://localhost:3001/connect');
 
@@ -19,22 +26,53 @@ function get_file_by_index(allfiles, index) {
     return filewithmeta[0];
 }
 
+async function sign_message(signer, message) {
+    return await signer.signMessage(message);
+}
+
+function authenticate(s_clientid, account, SetAuthenticated) {
+    provider = new ethers.BrowserProvider(window.ethereum);
+    provider.getSigner().then((signer) => {
+        sign_message(signer, s_clientid)
+        .then((signature) => {
+            fetch(`http://localhost:3001/authenticate?clientid=${s_clientid}&signedclientid=${signature}&walletaddress=${account}`)
+            .then((resp) => {
+                if(resp.status == 200)
+                    SetAuthenticated(true);
+            });
+        })
+        .catch((error) => {});
+    })
+    .catch((error) => {});
+}
+
 function App() {
 
     const [ClientId, SetClientId] = useState(0);
+    const [Authenticated, SetAuthenticated] = useState(false);
     const [AllFiles, SetAllFiles] = useState([]);
 
     const size = useScreenSize();
+    const { status, connect, account, chainId, ethereum } = useMetaMask();
 
     function resize_app() {
         var app_height = $('#App').height();
         var navbar_height = $('#Navbar').outerHeight();
-        $('#cdragndrop').height(app_height - navbar_height);
+        $('.cdragndrop').height(app_height - navbar_height);
     }
 
     useEffect(() => {
         resize_app();
     }, [size]);
+
+    if(status === "connected")
+    {
+        if(!already_connected_to_backend)
+        {
+            already_connected_to_backend = true;
+            authenticate(ClientId.toString(), account, SetAuthenticated);
+        }
+    }
 
     sse.onmessage = e => {
         try {
@@ -91,8 +129,37 @@ function App() {
                     </Navbar.Collapse>
                 </Container>
             </Navbar>
-            <div id="cdragndrop" className="cdragndrop">
-                <MyUploader clientid={ClientId} setallfiles={SetAllFiles}/>
+
+            <div className="cdragndrop">
+                { (status === "initializing") && (
+                    <div className="metamask">
+                        <div>Synchronisation with MetaMask ongoing...</div>
+                    </div>
+                )}
+                { (status === "unavailable") && (
+                    <div className="metamask">
+                        <div>MetaMask not available :(</div>
+                    </div>
+                )}
+                { (status === "notConnected") && (
+                    <div className="metamask">
+                        <Button onClick={connect} variant="primary">Connect to MetaMask</Button>{' '}
+                    </div>
+                )}
+                { (status === "connecting") && (
+                    <div className="metamask">
+                        Connecting...
+                    </div>
+                )}
+                { (status === "connected") && Authenticated && (
+                    <MyUploader clientid={ClientId} walletaddress={account} setallfiles={SetAllFiles}/>
+                )}
+                { (status === "connected") && !Authenticated && (
+                    <div className="metamask">
+                        <Button onClick={authenticate} variant="primary">Authenticate</Button>{' '}
+                    </div>
+                )}
+                {resize_app()}
             </div>
         </div>
     );
