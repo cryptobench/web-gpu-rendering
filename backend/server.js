@@ -6,6 +6,7 @@ const fileUpload = require("express-fileupload");
 const mysql = require('mysql2');
 const sanitizer = require("perfect-express-sanitizer");
 const { Validator } = require('node-input-validator');
+const { ethers } = require("ethers");
 
 const niv = require('node-input-validator');
 
@@ -13,6 +14,11 @@ const event = require("./event.js");
 const worker = require("./worker.js");
 
 require('dotenv').config();
+
+if(process.env.YAGNA_APPKEY == undefined) {
+	console.log('error, YAGNA_APPKEY is not defined');
+	return -1;
+}
 
 const app = express();
 
@@ -63,6 +69,7 @@ connection.connect(function(err)
 
 		const newClient = {
 			id: clientId,
+			authenticated: false,
 			response
 		};
 
@@ -75,6 +82,17 @@ connection.connect(function(err)
 	}
 
 	app.get('/connect', eventsHandler);
+
+	app.get("/authenticate", (req, res) => {
+		addressThatSignedData = ethers.verifyMessage(req.query.clientid, req.query.signedclientid);
+		if(addressThatSignedData.toLowerCase() == req.query.walletaddress.toLowerCase()) {
+			res.status(200).send('ok');
+			utils.get_client(clients, Number(req.query.clientid)).authenticated = true;
+		}
+		else {
+			res.status(422).send('error');
+		}
+	});
 
 	app.get("/download", (req, res) => {
 		const download_validator = new Validator(req.query, {
@@ -145,66 +163,69 @@ connection.connect(function(err)
 						else
 						{
 							client = utils.get_client(clients, params.clientid);
-							var jobuuid = Date.now();
-							var scene = req.files.fileField.name;
-							var outputdir = `${__dirname}/inputs/${params.clientid}/${jobuuid}`;
+							if(client.authenticated)
+							{
+								var jobuuid = Date.now();
+								var scene = req.files.fileField.name;
+								var outputdir = `${__dirname}/inputs/${params.clientid}/${jobuuid}`;
 
-							var remaining_providers_id = params.whitelist.filter(providerid => !params.blacklist.includes(providerid));
+								var remaining_providers_id = params.whitelist.filter(providerid => !params.blacklist.includes(providerid));
 
-							if((params.whitelist.length != 0) && (remaining_providers_id.length == 0))
-								utils.send_event_to_client(client, {event: 'WHITE_BLACK_LIST_ERROR', errorMessage: 'incompatible white/black-lists', jobIndex: params.idx});
+								if((params.whitelist.length != 0) && (remaining_providers_id.length == 0))
+									utils.send_event_to_client(client, {event: 'WHITE_BLACK_LIST_ERROR', errorMessage: 'incompatible white/black-lists', jobIndex: params.idx});
 
-							fs.mkdir(outputdir, { recursive: true }, function(err) {
-								if(err) {
-									console.log(err);
-									res.status(422);
-									utils.send_event_to_client(client, {event: 'INTERNAL_ERROR_1', errorMessage: 'internal error 1', jobIndex: params.idx});
-									db.insert_error(utils.get_mysql_date(), err, '', '', '');
-								}
-								else {
-									fs.writeFile(`${outputdir}/${scene}`, req.files.fileField.data, function(err) {
-								    	if(err) {
-								    		console.log(err);
-								    		res.status(422);
-											utils.send_event_to_client(client, {event: 'INTERNAL_ERROR_2', errorMessage: 'internal error 2', jobIndex: params.idx});
-											db.insert_error(utils.get_mysql_date(), err, '', '', '');
-								    	}
-								    	else {
-								    		var cmd = spawn('blender', ['-b', `${outputdir}/${scene}`, '--python', './get_blend_infos.py']);
-											cmd.stdout.on('data', (data) => {
-												var sdatas = data.toString().split("\n");
-												for(sdata of sdatas) {
-													if(sdata.includes('Error')) {
-														res.status(422);
-														utils.send_event_to_client(client, {event: 'INVALID_BLEND_FILE', errorMessage: 'invalid blender file', jobIndex: params.idx});
+								fs.mkdir(outputdir, { recursive: true }, function(err) {
+									if(err) {
+										console.log(err);
+										res.status(422);
+										utils.send_event_to_client(client, {event: 'INTERNAL_ERROR_1', errorMessage: 'internal error 1', jobIndex: params.idx});
+										db.insert_error(utils.get_mysql_date(), err, '', '', '');
+									}
+									else {
+										fs.writeFile(`${outputdir}/${scene}`, req.files.fileField.data, function(err) {
+									    	if(err) {
+									    		console.log(err);
+									    		res.status(422);
+												utils.send_event_to_client(client, {event: 'INTERNAL_ERROR_2', errorMessage: 'internal error 2', jobIndex: params.idx});
+												db.insert_error(utils.get_mysql_date(), err, '', '', '');
+									    	}
+									    	else {
+									    		var cmd = spawn('blender', ['-b', `${outputdir}/${scene}`, '--python', './get_blend_infos.py']);
+												cmd.stdout.on('data', (data) => {
+													var sdatas = data.toString().split("\n");
+													for(sdata of sdatas) {
+														if(sdata.includes('Error')) {
+															res.status(422);
+															utils.send_event_to_client(client, {event: 'INVALID_BLEND_FILE', errorMessage: 'invalid blender file', jobIndex: params.idx});
+														}
+														else
+														{
+															try {
+																var sdata2 = sdata.trim().replaceAll("'", '"');
+																var jsondata = JSON.parse(sdata2);
+
+																if((params.startframe < jsondata.start) || (params.startframe > jsondata.end))
+																	utils.send_event_to_client(client, {event: 'START_FRAME_ERROR', errorMessage: `start frame must be between ${jsondata.start} and ${jsondata.end}`, jobIndex: params.idx});
+																else if((params.stopframe < jsondata.start) || (params.stopframe > jsondata.end))
+																	utils.send_event_to_client(client, {event: 'STOP_FRAME_ERROR', errorMessage: `stop frame must be between ${jsondata.start} and ${jsondata.end}`, jobIndex: params.idx});
+																else if(params.stopframe < params.startframe)
+																	utils.send_event_to_client(client, {event: 'START_STOP_FRAME_ERROR', errorMessage: 'start frame must be < stop frame', jobIndex: params.idx});
+																else {
+																	db.add_job(	params.memory, params.storage, params.threads, params.workers, params.budget, params.startprice, params.cpuprice, params.envprice,
+																				params.timeoutglobal, params.timeoutupload, params.timeoutrender, scene, params.format, params.startframe, params.stopframe, params.stepframe,
+																				outputdir, params.clientid, jobuuid, params.idx, params.walletaddress, JSON.stringify(params.whitelist), JSON.stringify(params.blacklist));
+																	res.status(200);
+																}
+
+															} catch (error) {}
+														}
 													}
-													else
-													{
-														try {
-															var sdata2 = sdata.trim().replaceAll("'", '"');
-															var jsondata = JSON.parse(sdata2);
-
-															if((params.startframe < jsondata.start) || (params.startframe > jsondata.end))
-																utils.send_event_to_client(client, {event: 'START_FRAME_ERROR', errorMessage: `start frame must be between ${jsondata.start} and ${jsondata.end}`, jobIndex: params.idx});
-															else if((params.stopframe < jsondata.start) || (params.stopframe > jsondata.end))
-																utils.send_event_to_client(client, {event: 'STOP_FRAME_ERROR', errorMessage: `stop frame must be between ${jsondata.start} and ${jsondata.end}`, jobIndex: params.idx});
-															else if(params.stopframe < params.startframe)
-																utils.send_event_to_client(client, {event: 'START_STOP_FRAME_ERROR', errorMessage: 'start frame must be < stop frame', jobIndex: params.idx});
-															else {
-																db.add_job(	params.memory, params.storage, params.threads, params.workers, params.budget, params.startprice, params.cpuprice, params.envprice,
-																			params.timeoutglobal, params.timeoutupload, params.timeoutrender, scene, params.format, params.startframe, params.stopframe, params.stepframe,
-																			outputdir, params.clientid, jobuuid, params.idx, params.walletaddress, JSON.stringify(params.whitelist), JSON.stringify(params.blacklist));
-																res.status(200);
-															}
-
-														} catch (error) {}
-													}
-												}
-											});
-								    	}
-									});
-								}
-							})
+												});
+									    	}
+										});
+									}
+								})
+							}
 
 						}
 					});
