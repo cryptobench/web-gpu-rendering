@@ -124,7 +124,7 @@ export async function render(   queue,
 	});
 
 	const executor = await TaskExecutor.create({
-		yagnaOptions: {apiKey: process.env.YAGNA_APP_KEY},
+		yagnaOptions: {apiKey: process.env.YAGNA_APPKEY},
 		subnetTag: SUBNET_TAG,
 		payment: {driver: PAYMENT_DRIVER, network: PAYMENT_NETWORK},
 		package: "b5e19a68e0268c0e72309048b5e6a29512e3ecbabd355c6ac590f75d",
@@ -140,6 +140,7 @@ export async function render(   queue,
 
 	var cmd_display = "PCIID=$(nvidia-xconfig --query-gpu-info | grep 'PCI BusID' | awk -F'PCI BusID : ' '{print $2}') && (nvidia-xconfig --busid=$PCIID --use-display-device=none --virtual=1280x1024 || true) && ((Xorg :1 &) || true) && sleep 5"
 
+	// executor.onActivityReady(async (ctx) => {
 	executor.beforeEach(async (ctx) => {
 		var dt = Date.now() - deployments_time[ctx.activity.agreementId];
 		queue_send(queue, {agreementId: ctx.activity.agreementId, event: 'DEPLOYMENT_FINISHED', deployment_time: dt});
