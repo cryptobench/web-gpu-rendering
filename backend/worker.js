@@ -7,22 +7,21 @@ async function render(	memory, storage, threads, workers,	budget,	startPrice,	cp
 						frames, outputDir, whitelist, blacklist, verbose);
 }
 
-function assemble_frames_and_notify(client, scene_filepath, archive_name, output_dir, clientid, jobuuid, jobindex) {
+function assemble_frames_and_notify(walletaddress, scene_filepath, archive_name, output_dir, clientid, jobuuid, jobindex) {
 	var cmd = spawn('blender', ['-b', `${scene_filepath}`, '--python', './assemble_frames.py']);
 	cmd.on('close', (code) => {
 		child_process.execSync(`zip -r ${archive_name} *`, {
 		  cwd: output_dir
 		});
-		if(client)
-			utils.send_event_to_client(client, {"event": "JOB_FINISHED", "clientId": clientid, "jobUuid": jobuuid, "jobIndex": jobindex});
+		utils.send_event_to_wallet_clients(walletaddress, {"event": "JOB_FINISHED", "clientId": clientid, "jobUuid": jobuuid, "jobIndex": jobindex});
 	});
 }
 
-function do_post_job_actions(jobid, client, scene_filepath, archive_name, output_dir, clientid, jobuuid, jobindex) {
+function do_post_job_actions(jobid, walletaddress, scene_filepath, archive_name, output_dir, clientid, jobuuid, jobindex) {
 	var endJobDate = utils.get_mysql_date();
 	db.update_table_entry_by_id('jobs', 'jobid', jobid, {finishedat: endJobDate, status: 'DONE'})
 	.then(function (result) {
-		assemble_frames_and_notify(	client, scene_filepath, archive_name, output_dir, clientid, jobuuid, jobindex);
+		assemble_frames_and_notify(walletaddress, scene_filepath, archive_name, output_dir, clientid, jobuuid, jobindex);
 	});
 }
 
@@ -31,43 +30,44 @@ function checkJobs() {
 	.then(function (cj) {
 		if(cj)
 		{
-			jobid = cj.job.jobid;
-			client = utils.get_client(clients, cj.job.clientid);
+			jobid = cj.jobid;
+			walletaddress = cj.walletaddress;
+			jobindex = cj.jobindex;
+			scene = cj.scene;
 
-			var frames = utils.range(cj.parameters.startframe, cj.parameters.stopframe + 1, cj.parameters.stepframe);
+			var frames = utils.range(cj.startframe, cj.stopframe + 1, cj.stepframe);
 			var job_frames_len = frames.length;
 
 			var sql_job_update = {status: 'RUNNING'};
-			if(cj.job.status == 'TODO')
+			if(cj.status == 'TODO')
 				sql_job_update.startedat = utils.get_mysql_date();
 			else
 				cj.already_done.forEach((frame_already_done) => frames = frames.filter(frame => frame !== frame_already_done));
 
 			if(frames.length == 0)
-				return do_post_job_actions(	jobid, client, `${cj.parameters.outputdir}/${cj.parameters.scene}`, `${cj.job.clientid}_${cj.job.jobuuid}`,
-											cj.parameters.outputdir, cj.job.clientid, cj.job.jobuuid, cj.job.jobindex);
+				return do_post_job_actions(	jobid, cj.walletaddress, `${cj.outputdir}/${cj.scene}`, `${cj.clientid}_${cj.jobuuid}`,
+											cj.outputdir, cj.clientid, cj.jobuuid, cj.jobindex);
 			else
-				return db.update_table_entry_by_id('jobs', 'jobid', cj.job.jobid, sql_job_update)
+				return db.update_table_entry_by_id('jobs', 'jobid', cj.jobid, sql_job_update)
 				.then(function (result) {
-					return render( 	cj.parameters.memory, cj.parameters.storage, cj.parameters.threads, cj.parameters.workers, cj.parameters.budget, cj.parameters.startprice,
-									cj.parameters.cpuprice, cj.parameters.envprice,	cj.parameters.timeoutglobal, cj.parameters.timeoutupload, cj.parameters.timeoutrender,
-									`${cj.parameters.outputdir}/${cj.parameters.scene}`, cj.parameters.format, frames, cj.parameters.outputdir, JSON.parse(cj.parameters.whitelist),
-									JSON.parse(cj.parameters.blacklist), "true")
+					utils.send_jobs_status_to_all_wallet_clients();
+					return render( 	cj.memory, cj.storage, cj.threads, cj.workers, cj.budget, cj.startprice, cj.cpuprice, cj.envprice,	cj.timeoutglobal, cj.timeoutupload,
+									cj.timeoutrender, `${cj.outputdir}/${cj.scene}`, cj.format, frames, cj.outputdir, JSON.parse(cj.whitelist), JSON.parse(cj.blacklist), "true")
 					.then((data) => {
-						return db.get_job_tasks_done(cj.job.jobid)
+						return db.get_job_tasks_done(cj.jobid)
 						.then(function (result) {
 							if(result.length == job_frames_len)
-								return do_post_job_actions(	jobid, client, `${cj.parameters.outputdir}/${cj.parameters.scene}`, `${cj.job.clientid}_${cj.job.jobuuid}`,
-															cj.parameters.outputdir, cj.job.clientid, cj.job.jobuuid, cj.job.jobindex);
+								return do_post_job_actions(	jobid, cj.walletaddress, `${cj.outputdir}/${cj.scene}`, `${cj.clientid}_${cj.jobuuid}`,
+															cj.outputdir, cj.clientid, cj.jobuuid, cj.jobindex);
 							else
-								return db.update_table_entry_by_id('jobs', 'jobid', cj.job.jobid, {status: 'RETRY', retrycount: cj.job.retrycount + 1});
+								return db.update_table_entry_by_id('jobs', 'jobid', cj.jobid, {status: 'RETRY', retrycount: cj.retrycount + 1});
 						})
 					})
 					.catch((err) => {
 						if(!err.toString().includes('No connection to Yagna'))
 						{
-							utils.send_event_to_client(client, {"event": "INTERNAL_ERROR_3", "errorMessage": err, "jobIndex": cj.job.jobindex});
-							db.insert_error(utils.get_mysql_date(), err, '', cj.job.jobid, '');
+							utils.send_event_to_wallet_clients(cj.walletaddress, {"event": "INTERNAL_ERROR_3", "errorMessage": err, "jobIndex": cj.jobindex});
+							db.insert_error(utils.get_mysql_date(), err, '', cj.jobid, '');
 						}
 					});
 				})

@@ -86,14 +86,17 @@ function App() {
                 fetch(`http://localhost:3001/download?filename=${req_field}`)
                     .then(resp => resp.blob())
                     .then(blob => {
-                        fileDownload(blob, `${filename}`)
-                        get_file_by_index(AllFiles, data.jobIndex).remove();
+                        fileDownload(blob, `${filename}`);
+                        var file = get_file_by_index(AllFiles, data.jobIndex);
+                        if(file != undefined)
+                            file.remove();
                     })
             }
             else if(['INTERNAL_ERROR_1', 'INTERNAL_ERROR_2', 'INVALID_BLEND_FILE', 'START_FRAME_ERROR', 'STOP_FRAME_ERROR', 'START_STOP_FRAME_ERROR'].includes(data.event))
             {
                 var file = get_file_by_index(AllFiles, data.jobIndex);
-                file.cancel();
+                if(file != undefined)
+                    file.cancel();
             }
         }
         catch {

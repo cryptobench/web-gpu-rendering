@@ -25,31 +25,61 @@ function update_table_entry_by_id(tablename, idfieldname, id, data) {
 	})
 }
 
+function monitoring_by_wallet(walletaddress) {
+	var limit_date = utils.get_mysql_date_m7d();
+  	var jobsSql = `	SELECT job.jobid, job.clientid, job.jobuuid, job.jobindex AS jobIndex, job.status, parameters.scene, parameters.startframe, parameters.stopframe, parameters.stepframe, tasksDone, jobs2.current_job
+					FROM jobs job
+					NATURAL JOIN parameters
+					NATURAL JOIN (SELECT MAX(jobid) AS current_job FROM jobs WHERE status = 'DONE') jobs2
+					LEFT JOIN (SELECT jobid, count(*) tasksDone FROM tasks WHERE status = 'DONE' GROUP BY jobid) task2
+					ON (job.jobid = task2.jobid) AND (job.walletaddress = '${walletaddress}') AND ((job.status != 'DONE') OR (job.finishedat > '${limit_date}'))
+					ORDER BY job.createdat ASC`;
+	return execSql(jobsSql)
+	.then(function (jobs) {
+		jobs.forEach((job) => {
+			job.totalFrames = utils.range(job.startframe, job.stopframe + 1, job.stepframe).length;
+			if(job.status == 'DONE') {
+				job.path = `${job.clientid}/${job.jobuuid}/${job.clientid}_${job.jobuuid}.zip`;
+				job.poolPosition = -1;
+			}
+			else {
+				job.path = '';
+				job.poolPosition = job.jobid - job.current_job - 1;
+				if(job.tasks_done == null)
+					job.tasks_done = 0;
+			}
+
+			delete job.startframe;
+			delete job.stopframe;
+			delete job.stepframe;
+			delete job.clientid;
+			delete job.jobuuid;
+			delete job.jobid;
+			delete job.current_job;
+		});
+		return jobs
+	})
+}
+
 function get_job() {
 	var job = null;
-  	var jobSql = `SELECT * FROM jobs WHERE status != "DONE" ORDER BY createdat ASC LIMIT 1;`;
+  	var jobSql = `  SELECT *
+					FROM jobs job
+					NATURAL JOIN parameters
+					WHERE job.status != 'DONE'
+					ORDER BY job.createdat ASC LIMIT 1`;
 	return execSql(jobSql)
 	.then(function (result) {
-		if(result.length != 0)
-		{
-			job = result[0];
-			var ParametersSql = `SELECT * FROM parameters WHERE parametersid = ${job.parametersid};`;
-			return execSql(ParametersSql)
-		}
-		else return null;
-	})
-	.then(function (result) {
-		return !result?null:{job: job, parameters: result[0]};
-	})
-	.then(function (result) {
-		if(result)
-			return get_job_tasks_done(result.job.jobid)
+		if(result.length != 0) {
+			result = result[0];
+			return get_job_tasks_done(result.jobid)
 			.then(function (result2) {
 				result.already_done = result2;
 				return result;
 			})
+		}
 		else
-			return result;
+			return null;
 	})
 }
 
@@ -132,7 +162,7 @@ function createTables() {
 								clientid BIGINT,
 								jobuuid BIGINT,
 								jobindex TINYTEXT,
-								walletaddress TINYTEXT,
+								walletaddress VARCHAR(42),
 								parametersid BIGINT,
 								createdat TIMESTAMP,
 								startedat TIMESTAMP,
@@ -169,18 +199,21 @@ function createTables() {
 								agreementid VARCHAR(66),
 								createdat TIMESTAMP,
 								rendertime INT,
-		                        status ENUM('REDO', 'DONE'))`;
+		                        status ENUM('REDO', 'DONE'),
+		                        foreign key (jobid) references jobs(jobid),
+		                        foreign key (agreementid) references agreements(agreementid))`;
 
 	var createAgreementsTable = `create table if not exists agreements(
 									agreementid VARCHAR(66) primary key,
 		                        	jobid BIGINT,
-		                        	providerid TINYTEXT,
+		                        	providerid VARCHAR(42),
 		                        	providername TINYTEXT,
 		                        	status ENUM('CREATED', 'CONFIRMED', 'REJECTED', 'TERMINATED'),
 		                        	reason TINYTEXT,
 		                        	deploymenttime INT,
 		                        	uploadtime INT,
-		                        	cost FLOAT)`;
+		                        	cost FLOAT,
+		                        	foreign key (jobid) references jobs(jobid))`;
 
 	var createErrorsTable = `create table if not exists errors(
 									errorid BIGINT AUTO_INCREMENT primary key,
@@ -188,27 +221,44 @@ function createTables() {
 		                        	error TEXT,
 		                        	agreementid VARCHAR(66),
 		                        	jobid BIGINT,
-		                        	providerid TINYTEXT)`;
+		                        	providerid VARCHAR(42),
+		                        	foreign key (jobid) references jobs(jobid),
+		                        	foreign key (agreementid) references agreements(agreementid))`;
 
-	execSql(createJobsTable)
+	var createIndexWalletaddressOnJobsTable = `create index walletaddress on jobs(walletaddress)`;
+	var createIndexFinishedatOnJobsTable = `create index finishedat on jobs(finishedat)`;
+	var createIndexStatusOnJobsTable = `create index status on jobs(status)`;
+	var createIndexProvideridOnAgreementsTable = `create index providerid on agreements(providerid)`;
+	var createIndexProvideridOnErrorsTable = `create index providerid on errors(providerid)`;
+
+	return execSql(createJobsTable)
 	.then(function (result) {
 		return execSql(createParametersTable);
-	})
-	.then(function (result) {
-		return execSql(createTasksTable);
 	})
 	.then(function (result) {
 		return execSql(createAgreementsTable);
 	})
 	.then(function (result) {
+		return execSql(createTasksTable);
+	})
+	.then(function (result) {
 		return execSql(createErrorsTable);
 	})
 	.then(function (result) {
-		console.log('db tables ready');
+		return execSql(createIndexWalletaddressOnJobsTable);
 	})
-	.catch((err) => {
-    	console.log("Error: " + err);
-  	})
+	.then(function (result) {
+		return execSql(createIndexFinishedatOnJobsTable);
+	})
+	.then(function (result) {
+		return execSql(createIndexStatusOnJobsTable);
+	})
+	.then(function (result) {
+		return execSql(createIndexProvideridOnAgreementsTable);
+	})
+	.then(function (result) {
+		return execSql(createIndexProvideridOnErrorsTable);
+	})
 }
 
-module.exports = {execSql, createTables, get_job_tasks_done, update_table_entry_by_id, get_job, add_job, insert_parameters, insert_job, insert_agreement, insert_task, insert_error}
+module.exports = {execSql, createTables, get_job_tasks_done, update_table_entry_by_id, monitoring_by_wallet, get_job, add_job, insert_parameters, insert_job, insert_agreement, insert_task, insert_error}

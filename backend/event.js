@@ -4,8 +4,12 @@ function checkQueue() {
 	var msg;
 	try {
 		while(msg = queue.receive()) {
+
+			msg.scene = scene;
+			msg.jobIndex = jobindex;
+
 			if(!(['YAGNA_OK', 'YAGNA_ERROR', 'RENDER_FRAME_FINISHED', 'INVOICE_RECEIVED', 'RENDER_FRAME_ERROR'].includes(msg.event)))
-				utils.send_event_to_client(client, msg);
+				utils.send_event_to_wallet_clients(walletaddress, msg);
 
 			if(msg.event === 'YAGNA_OK')
 				yagna_already_in_error = false;
@@ -15,7 +19,7 @@ function checkQueue() {
 				{
 					yagna_already_in_error = true;
 					db.insert_error(utils.get_mysql_date(), msg.errorMessage, '', jobid, '');
-					utils.send_event_to_client(client, msg);
+					utils.send_event_to_wallet_clients(walletaddress, msg);
 					console.log(msg);
 				}
 			}
@@ -28,7 +32,7 @@ function checkQueue() {
 					db.insert_task(jobid, msg.frame, msg.agreementId, createdat, msg.renderFrameTime, 'DONE');
 					delete msg.outputFile;
 					delete msg.startRenderTime;
-					utils.send_event_to_client(client, msg);
+					utils.send_event_to_wallet_clients(walletaddress, msg);
 				}
 			}
 			else if(msg.event === 'RENDER_FRAME_ERROR')
@@ -46,7 +50,7 @@ function checkQueue() {
 			{
 				db.update_table_entry_by_id('agreements', 'agreementid', msg.agreementId, {cost: msg.amount});
 				delete msg.time;
-				utils.send_event_to_client(client, msg);
+				utils.send_event_to_wallet_clients(walletaddress, msg);
 			}
 			else if(msg.event == 'UPLOAD_FINISHED')
 				db.update_table_entry_by_id('agreements', 'agreementid', msg.agreementId, {uploadtime: msg.upload_time});

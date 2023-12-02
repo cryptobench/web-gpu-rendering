@@ -49,16 +49,6 @@ function check_yagna_status(queue) {
 			else
 				queue_send(queue, {event: 'YAGNA_OK'});
 		});
-
-		cmd.stderr.on('data', (data) => {
-			var sdata = data.toString();
-			if(sdata.includes("routing error: Connecting GSB"))
-				queue_send(queue, {event: 'YAGNA_ERROR', errorMessage: 'Yagna is not_running'});
-		});
-
-		cmd.on('error', (code) => {
-			queue_send(queue, {event: 'YAGNA_ERROR', errorMessage: 'Yagna is not installed or not in PATH'});
-		});
 }
 
 var cpu_price = 0;
