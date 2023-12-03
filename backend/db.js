@@ -141,6 +141,14 @@ function insert_error(time, error, agreementid, jobid, providerid) {
 	})
 }
 
+function check_index(table, index) {
+	var sql = `SELECT COUNT(1) indexExists FROM INFORMATION_SCHEMA.STATISTICS WHERE table_schema='mydb' AND table_name='${table}' AND index_name='${index}'`;
+	return execSql(sql)
+	.then(function (result) {
+		return result[0].indexExists;
+	})
+}
+
 function execSql(sql) {
 	sql = sql.replace(/\s+/g, ' ');
   	let p = new Promise(function (res, rej) {
@@ -153,8 +161,6 @@ function execSql(sql) {
 	});
 	return p;
 }
-
-// TODO, 	add foreign and secondary keys
 
 function createTables() {
 	var createJobsTable = 	`create table if not exists jobs(
@@ -245,19 +251,49 @@ function createTables() {
 		return execSql(createErrorsTable);
 	})
 	.then(function (result) {
-		return execSql(createIndexWalletaddressOnJobsTable);
+		return check_index('jobs', 'walletaddress')
+		.then(function (already_exists) {
+			if(!already_exists)
+				return execSql(createIndexWalletaddressOnJobsTable);
+			else
+				return result;
+		})
 	})
 	.then(function (result) {
-		return execSql(createIndexFinishedatOnJobsTable);
+		return check_index('jobs', 'finishedat')
+		.then(function (already_exists) {
+			if(!already_exists)
+				return execSql(createIndexFinishedatOnJobsTable);
+			else
+				return result;
+		})
 	})
 	.then(function (result) {
-		return execSql(createIndexStatusOnJobsTable);
+		return check_index('jobs', 'status')
+		.then(function (already_exists) {
+			if(!already_exists)
+				return execSql(createIndexStatusOnJobsTable);
+			else
+				return result;
+		})
 	})
 	.then(function (result) {
-		return execSql(createIndexProvideridOnAgreementsTable);
+		return check_index('agreements', 'providerid')
+		.then(function (already_exists) {
+			if(!already_exists)
+				return execSql(createIndexProvideridOnAgreementsTable);
+			else
+				return result;
+		})
 	})
 	.then(function (result) {
-		return execSql(createIndexProvideridOnErrorsTable);
+		return check_index('errors', 'providerid')
+		.then(function (already_exists) {
+			if(!already_exists)
+				return execSql(createIndexProvideridOnErrorsTable);
+			else
+				return result;
+		})
 	})
 }
 

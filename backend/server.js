@@ -40,8 +40,10 @@ connection = mysql.createConnection({
 
 connection.connect(function(err)
 {
-  	if(err)
-  		throw err;
+	if(err) {
+		console.log(err);
+		process.exit(-5);
+	}
 
   	db.createTables()
   	.then(function (result) {
@@ -247,7 +249,8 @@ connection.connect(function(err)
 		var interval2 = setInterval(event_func, 1000);
 	})
 	.catch((err) => {
-    	console.log("Error: " + err);
+		console.log(err);
+		process.exit(-6);
   	})
 });
 
