@@ -13,9 +13,7 @@ import { ethers } from 'ethers';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 var already_connected_to_backend = false;
-var signer = null;
 var provider = null;
-var authenticated = false;
 
 const sse = new EventSource('http://localhost:3001/connect');
 
@@ -37,7 +35,7 @@ function authenticate(s_clientid, account, SetAuthenticated) {
         .then((signature) => {
             fetch(`http://localhost:3001/authenticate?clientid=${s_clientid}&signedclientid=${signature}&walletaddress=${account}`)
             .then((resp) => {
-                if(resp.status == 200)
+                if(resp.status === 200)
                     SetAuthenticated(true);
             });
         })
@@ -53,7 +51,7 @@ function App() {
     const [AllFiles, SetAllFiles] = useState([]);
 
     const size = useScreenSize();
-    const { status, connect, account, chainId, ethereum } = useMetaMask();
+    const { status, connect, account } = useMetaMask();
 
     function resize_app() {
         var app_height = $('#App').height();
@@ -88,14 +86,14 @@ function App() {
                     .then(blob => {
                         fileDownload(blob, `${filename}`);
                         var file = get_file_by_index(AllFiles, data.jobIndex);
-                        if(file != undefined)
+                        if(file !== undefined)
                             file.remove();
                     })
             }
             else if(['INTERNAL_ERROR_1', 'INTERNAL_ERROR_2', 'INVALID_BLEND_FILE', 'START_FRAME_ERROR', 'STOP_FRAME_ERROR', 'START_STOP_FRAME_ERROR'].includes(data.event))
             {
                 var file = get_file_by_index(AllFiles, data.jobIndex);
-                if(file != undefined)
+                if(file !== undefined)
                     file.cancel();
             }
         }
