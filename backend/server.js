@@ -171,7 +171,7 @@ connection.connect(function(err)
 								if(client.authenticated)
 								{
 									var jobuuid = Date.now();
-									var scene = req.files.fileField.name;
+									var scene = req.files.fileField.name.split(' ').join('_');
 									var outputdir = `${__dirname}/inputs/${params.clientid}/${jobuuid}`;
 
 									var remaining_providers_id = params.whitelist.filter(providerid => !params.blacklist.includes(providerid));
