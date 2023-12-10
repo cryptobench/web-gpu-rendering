@@ -15,6 +15,18 @@ function assemble_frames_and_notify(walletaddress, scene_filepath, archive_name,
 		});
 		utils.send_event_to_wallet_clients(walletaddress, {"event": "JOB_FINISHED", "clientId": clientid, "jobUuid": jobuuid, "jobIndex": jobindex});
 	});
+
+	cmd.stdout.on('data', (data) => {
+		console.log('stdout', data.toString());
+	});
+
+	cmd.stderr.on('data', (data) => {
+		console.log('stderr', data.toString());
+	});
+
+	cmd.on('error', (code) => {
+		console.log('error', code);
+	});
 }
 
 function do_post_job_actions(jobid, walletaddress, scene_filepath, archive_name, output_dir, clientid, jobuuid, jobindex) {
