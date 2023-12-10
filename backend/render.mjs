@@ -7,7 +7,7 @@ const PAYMENT_DRIVER = 'erc20';		// process.env['PAYMENT_DRIVER']
 const PAYMENT_NETWORK = 'goerli';	// process.env['PAYMENT_NETWORK'];
 
 // Norbert's GPU providers (Beta)
-var whitelist_by_id = ["0xe17117edc3a6e60fb2b921c1c9ca9516fb133248", "0x3b075306b76da09fdfba5439fc11bf78cb340000", "0xc0d404f279394c2a0ee270df7cf42fec5a15d9d2"];
+var whitelist_by_id = ["0x8610b20941308fd71a8c96559cf4f87a8a38f5b4", "0xdb17f52f24e213c617381235b6c1a2c577eb8558", "0xcc9a418a2a604f889f46440c74577ffdb8b3e22c"];
 var blacklist_by_id = [];
 
 const myFilter = async (proposal) => {
@@ -114,6 +114,7 @@ export async function render(   queue,
 	});
 
 	const executor = await TaskExecutor.create({
+		expirationSec: timeoutGlobal * 60,
 		yagnaOptions: {apiKey: process.env.YAGNA_APPKEY},
 		subnetTag: SUBNET_TAG,
 		payment: {driver: PAYMENT_DRIVER, network: PAYMENT_NETWORK},
@@ -130,48 +131,49 @@ export async function render(   queue,
 
 	var cmd_display = "PCIID=$(nvidia-xconfig --query-gpu-info | grep 'PCI BusID' | awk -F'PCI BusID : ' '{print $2}') && (nvidia-xconfig --busid=$PCIID --use-display-device=none --virtual=1280x1024 || true) && ((Xorg :1 &) || true) && sleep 5"
 
-	// executor.onActivityReady(async (ctx) => {
-	executor.beforeEach(async (ctx) => {
-		var dt = Date.now() - deployments_time[ctx.activity.agreementId];
-		queue_send(queue, {agreementId: ctx.activity.agreementId, event: 'DEPLOYMENT_FINISHED', deployment_time: dt});
-		const res = await ctx
-			.beginBatch()
-			.uploadFile(scene, "/golem/resources/scene.blend")
-			.run(cmd_display)
-			.end()
-			.catch((e) => {
-				blacklist_by_id.push(ctx.options.provider.id);
-				queue_send(queue, {agreementId: ctx.activity.agreementId, event: 'UPLOAD_ERROR', error_message: e});
-			});
+	try {
+		executor.onActivityReady(async (ctx) => {
+			var dt = Date.now() - deployments_time[ctx.activity.agreementId];
+			queue_send(queue, {agreementId: ctx.activity.agreementId, event: 'DEPLOYMENT_FINISHED', deployment_time: dt});
+			const res = await ctx
+				.beginBatch()
+				.uploadFile(scene, "/golem/resources/scene.blend")
+				.run(cmd_display)
+				.end()
+				.catch((e) => {
+					//blacklist_by_id.push(ctx.options.provider.id);
+					queue_send(queue, {agreementId: ctx.activity.agreementId, event: 'UPLOAD_ERROR', error_message: e});
+				});
 
-		var upload_time = Date.parse(res[1].eventDate) - Date.parse(res[0].eventDate)
-		queue_send(queue, {agreementId: ctx.activity.agreementId, event: 'UPLOAD_FINISHED', upload_time: upload_time});
-	});
+			var upload_time = Date.parse(res[1].eventDate) - Date.parse(res[0].eventDate)
+			queue_send(queue, {agreementId: ctx.activity.agreementId, event: 'UPLOAD_FINISHED', upload_time: upload_time});
+		});
 
-	const results = executor.map(frames, async (ctx, frame) => {
-		var filename = frame.toString().padStart(4, "0");
-		var output_file = `${outputDir}/${filename}.${ext}`
-    	var cmd_render = `(DISPLAY=:1 blender -b /golem/resources/scene.blend -o /golem/output/ -noaudio -F ${format} -f ${frame.toString()} -- --cycles-device CUDA)`
+		const futureResults = frames.map((frame) => executor.run(async (ctx) => {
+			var filename = frame.toString().padStart(4, "0");
+			var output_file = `${outputDir}/${filename}.${ext}`
+			var cmd_render = `(DISPLAY=:1 blender -b /golem/resources/scene.blend -o /golem/output/ -noaudio -F ${format} -f ${frame.toString()} -- --cycles-device CUDA)`
 
-		const result = await ctx
-			.beginBatch()
-			.run(cmd_render)
-			.downloadFile(`/golem/output/${filename}.${ext}`, output_file)
-			.end()
-			.catch((e) => {
-				blacklist_by_id.push(ctx.options.provider.id);
-				queue_send(queue, {agreementId: ctx.activity.agreementId, event: 'RENDER_FRAME_ERROR', error_message: e});
-			});
+			const result = await ctx
+				.beginBatch()
+				.run(cmd_render)
+				.downloadFile(`/golem/output/${filename}.${ext}`, output_file)
+				.end()
+				.catch((e) => {
+					//blacklist_by_id.push(ctx.options.provider.id);
+					queue_send(queue, {agreementId: ctx.activity.agreement.id, event: 'RENDER_FRAME_ERROR', error_message: e});
+				});
 
-		var start_render_time = Date.parse(result[0].eventDate);
-		var render_frame_time = Date.parse(result[1].eventDate) - start_render_time;
+			var start_render_time = Date.parse(result[0].eventDate);
+			var render_frame_time = Date.parse(result[1].eventDate) - start_render_time;
 
-		return {agreementId: ctx.activity.agreementId, event: 'RENDER_FRAME_FINISHED', frame: frame, startRenderTime: start_render_time, renderFrameTime: render_frame_time, outputFile: output_file};
-	});
+			queue_send(queue, {agreementId: ctx.activity.agreement.id, event: 'RENDER_FRAME_FINISHED', frame: frame, startRenderTime: start_render_time, renderFrameTime: render_frame_time, outputFile: output_file});
+		}));
 
-	for await (const result of results) {
-		queue_send(queue, result);
+		const results = await Promise.all(futureResults);
+	} catch (error) {
+		console.error("Computation failed:", error);
+	} finally {
+		await executor.shutdown();
 	}
-
-	await executor.end();
 }
