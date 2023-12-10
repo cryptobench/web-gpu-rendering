@@ -27,18 +27,18 @@ export const MyUploader = (data) => {
                     "storage": 1,
                     "threads": 4,
                     "workers": 3,
-                    "budget": 1,
+                    "budget": 10,
                     "startprice": 1000,
                     "cpuprice": 1000,
                     "envprice": 1000,
-                    "timeoutglobal": 4,
+                    "timeoutglobal": 60,
                     "timeoutupload": 5,
                     "timeoutrender": 5,
                     "format": "PNG",
                     "startframe": 1,
-                    "stopframe": 3,
+                    "stopframe": 840,
                     "stepframe": 1,
-                    "whitelist": ["0xe17117edc3a6e60fb2b921c1c9ca9516fb133248", "0x3b075306b76da09fdfba5439fc11bf78cb340000", "0xc0d404f279394c2a0ee270df7cf42fec5a15d9d2"],
+                    "whitelist": ["0x8610b20941308fd71a8c96559cf4f87a8a38f5b4", "0xdb17f52f24e213c617381235b6c1a2c577eb8558", "0xcc9a418a2a604f889f46440c74577ffdb8b3e22c"],
                     "blacklist": []}
 
     const getUploadParams = ({ file, meta }) => {
