@@ -42,7 +42,7 @@ function check_yagna_status(queue) {
 			var account_reserved = jsondata.reserved;
 	        if((account_amount - account_reserved) < 1) {
 	            if(account_reserved > 0)
-	                queue_send(queue, {event: 'YAGNA_ERROR', errorMessage: 'Yagna daemon has not enought glm available'});
+	                queue_send(queue, {event: 'YAGNA_ERROR', errorMessage: 'Yagna daemon has not enough glm available'});
 	            else
 	                queue_send(queue, {event: 'YAGNA_ERROR', errorMessage: 'Yagna daemon has below 1 GLM'});
 			}
